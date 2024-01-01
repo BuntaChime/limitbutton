@@ -6,59 +6,53 @@
 
 #include "BluetoothSerial.h"
 
-#define SCREEN_WIDTH 128  // OLED display width, in pixels
-#define SCREEN_HEIGHT 64  // OLED display height, in pixels
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 // GPIO where LED is connected to
-const int ledPin = 13;
+// const int ledPin = 13;
 
 // Handle received and sent messages
 String message = "";
 char incomingChar;
 
-BluetoothSerial SerialBT;
+#define LED 13
+BluetoothSerial BT;
 
-void setup() {
-    pinMode(ledPin, OUTPUT);
-    Serial.begin(115200);
-    SerialBT.begin("BlewTewth");  // Bluetooth device name
+void setup()
+{
+    Serial.begin(11520);   // Initializing serial connection for debugging
+    BT.begin("BlewTewth"); // Name of your Bluetooth Device and in slave mode
+    Serial.println("Bluetooth Device is Ready to Pair");
+    pinMode(LED, OUTPUT); // Change the LED pin to OUTPUT
 
-    //@TODO: What is this for? Where do these constants come from?
-    if (!display.begin(SSD1306_SWITCHCAPVCC,
-                       0x3C)) {  // Address 0x3D for 128x64
-        Serial.println(F("SSD1306 allocation failed"));
-        for (;;)
-            ;
-    }
-
-    delay(2000);
     display.clearDisplay();
 
     display.setTextSize(1);
     display.setTextColor(WHITE);
     display.setCursor(0, 20);
     // Display static text
-    Serial.println("The device started, now you can pair it with bluetooth!");
-    display.println("The device started, now you can pair it with bluetooth!");
+    Serial.println("Device started, now you can pair it with bluetooth!");
+    display.println("Device started, now you can pair it with bluetooth!");
     display.display();
 }
-
-void loop() {
-    // Read received messages (LED control command)
-    if (SerialBT.available()) {
-        char incomingChar = SerialBT.read();
-        if (incomingChar != '\n') {
-            message += String(incomingChar);
-        } else {
-            message = "";
+void loop()
+{
+    if (BT.available()) // Check if we receive anything from Bluetooth
+    {
+        int incoming = BT.read(); // Read what we receive
+        Serial.print("Received: ");
+        Serial.println(incoming);
+        if (incoming == 49)
+        {                                // 1 in ASCII
+            digitalWrite(LED, HIGH);     // LED On
+            BT.println("LED turned ON"); // Send the text via BT Serial
         }
-        Serial.write(incomingChar);
-    }
-    // Check received message and control output accordingly
-    if (message == "led_on") {
-        digitalWrite(ledPin, HIGH);
-    } else if (message == "led_off") {
-        digitalWrite(ledPin, LOW);
+        if (incoming == 48)
+        {                                 // 0 in ASCII
+            digitalWrite(LED, LOW);       // LED Off
+            BT.println("LED turned OFF"); // Send the text via BT Serial
+        }
     }
     delay(20);
 }
